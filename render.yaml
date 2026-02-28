@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: webv1-api
+    runtime: node
+    rootDir: backend
+    autoDeploy: true
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/v1/healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production

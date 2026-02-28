@@ -1,0 +1,8 @@
+name = "webv1-api"
+main = "cloudflare/worker.ts"
+compatibility_date = "2026-02-26"
+compatibility_flags = ["nodejs_compat"]
+
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "9a37785302fb4a58866aefdc5f764760"

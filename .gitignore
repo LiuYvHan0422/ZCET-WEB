@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+backend/dist/
+backend-admin/dist/
+
+# Cloudflare local artifacts
+.wrangler/
+**/.wrangler/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Logs
+*.log
+*.err.log
+*.out.log
+
+# Temp/backup
+*.bak
+
+# Local deployment artifacts/config
+deploy/artifacts/
+deploy/cloudflare.env
+
+# OS files
+.DS_Store
+Thumbs.db
