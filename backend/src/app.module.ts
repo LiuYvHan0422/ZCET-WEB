@@ -20,6 +20,7 @@ import { SettingsModule } from "./modules/settings/settings.module";
 import { BackupModule } from "./modules/backup/backup.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { HealthModule } from "./modules/health/health.module";
+import { UploadModule } from "./modules/upload/upload.module";
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { HealthModule } from "./modules/health/health.module";
     BackupModule,
     NotificationsModule,
     HealthModule,
+    UploadModule,
   ],
   providers: [SeedService],
 })
