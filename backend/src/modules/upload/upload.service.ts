@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import OSS from "ali-oss";
+import OSS = require("ali-oss");
 import { randomUUID } from "crypto";
 import { extname } from "path";
 
