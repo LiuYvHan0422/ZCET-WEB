@@ -327,10 +327,40 @@ useHead({
 <style scoped>
 .product-card-btn {
   width: 100%;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-card {
+  height: 100%;
 }
 
 .product-card a {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.product-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.product-card-desc {
+  line-height: 1.6;
+  min-height: calc(1.6em * 3);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-card-price {
+  margin-top: auto;
+  margin-bottom: 12px;
 }
 
 .section-about .about-image {
