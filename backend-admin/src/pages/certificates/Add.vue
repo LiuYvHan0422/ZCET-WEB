@@ -23,6 +23,7 @@
                 <option value="patent">专利证书</option>
                 <option value="iso">体系认证</option>
                 <option value="award">获奖荣誉</option>
+                <option value="qualification">企业资质</option>
                 <option value="other">其他资质</option>
               </select>
             </div>
@@ -47,7 +48,7 @@
         </div>
 
         <div class="form-section">
-          <div class="section-title">详细说明</div>
+          <div class="section-title">详细说明 <span class="required">*</span></div>
           <textarea
             v-model="form.description"
             class="form-control"
@@ -101,6 +102,10 @@ const handleSubmit = async () => {
     alert('请填写必填字段');
     return;
   }
+  if (!form.description.trim()) {
+    alert('请填写资质详细说明');
+    return;
+  }
 
   submitting.value = true;
   try {
@@ -110,7 +115,7 @@ const handleSubmit = async () => {
       date: form.date || '',
       number: form.number || '',
       image: form.image || '',
-      description: form.description || '',
+      description: form.description.trim(),
       isActive: form.isActive,
     };
     const response = await api.post<{ code: number; message: string }>('/certificates', submitData);
@@ -120,7 +125,16 @@ const handleSubmit = async () => {
     } else {
       alert(response.message || '添加失败');
     }
-  } catch {
+  } catch (error: any) {
+    const message = error?.response?.data?.message;
+    if (Array.isArray(message) && message.length > 0) {
+      alert(message[0]);
+      return;
+    }
+    if (typeof message === 'string' && message.trim()) {
+      alert(message);
+      return;
+    }
     alert('添加失败，请稍后重试');
   } finally {
     submitting.value = false;

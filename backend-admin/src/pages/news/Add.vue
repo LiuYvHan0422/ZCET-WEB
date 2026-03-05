@@ -42,6 +42,7 @@
           </div>
           <div class="form-group">
             <label>正文内容 <span class="required">*</span></label>
+            <div ref="toolbarRef" class="wang-toolbar"></div>
             <div ref="editorRef" class="wang-editor"></div>
           </div>
         </div>
@@ -68,12 +69,14 @@ import { ref, reactive, onMounted, onBeforeUnmount, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/utils/request'
 import Upload from '@/components/Upload.vue'
-import { createEditor } from '@wangeditor/editor'
+import { createEditor, createToolbar } from '@wangeditor/editor'
 
 const router = useRouter()
 const submitting = ref(false)
+const toolbarRef = ref<HTMLElement | null>(null)
 const editorRef = ref<HTMLElement | null>(null)
 const editor = shallowRef(null)
+const toolbar = shallowRef(null)
 const form = reactive({ title: '', category: '', author: '', image: '', summary: '', content: '', status: 'draft' })
 const initEditor = () => {
   if (editorRef.value && !editor.value) {
@@ -92,6 +95,16 @@ const initEditor = () => {
         }
       }
     })
+
+    if (toolbarRef.value) {
+      toolbar.value = createToolbar({
+        editor: editor.value,
+        selector: toolbarRef.value,
+        config: {
+          modalAppendToBody: false
+        }
+      })
+    }
   }
 }
 const handleSubmit = async () => {
@@ -129,7 +142,16 @@ const handleReset = () => {
   }
 }
 onMounted(initEditor)
-onBeforeUnmount(() => { if (editor.value) { editor.value.destroy(); editor.value = null } })
+onBeforeUnmount(() => {
+  if (toolbar.value) {
+    toolbar.value.destroy()
+    toolbar.value = null
+  }
+  if (editor.value) {
+    editor.value.destroy()
+    editor.value = null
+  }
+})
 </script>
 <style scoped>
 .form-container { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
@@ -141,12 +163,19 @@ onBeforeUnmount(() => { if (editor.value) { editor.value.destroy(); editor.value
 .wang-editor {
   height: 400px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
   overflow: hidden;
 }
 
-:deep(.wang-editor .w-e-toolbar) {
-  border-bottom: 1px solid var(--border-color);
+.wang-toolbar {
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+  background: var(--white);
 }
 
 :deep(.wang-editor .w-e-text-container) {

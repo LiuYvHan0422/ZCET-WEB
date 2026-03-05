@@ -7,7 +7,7 @@ export function formatDate(date: Date | string, format: string = 'YYYY-MM-DD'): 
   const hours = String(d.getHours()).padStart(2, '0')
   const minutes = String(d.getMinutes()).padStart(2, '0')
   const seconds = String(d.getSeconds()).padStart(2, '0')
-  
+
   return format
     .replace('YYYY', String(year))
     .replace('MM', month)
@@ -26,18 +26,18 @@ export function formatDateTime(date: Date | string): string {
 export function formatPrice(price: number): string {
   return '¥' + price.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   })
 }
 
 // 格式化文件大小
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B'
-  
+
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
@@ -49,10 +49,10 @@ export function generateId(): string {
 // 防抖函数
 export function debounce<T extends (...args: any[]) => any>(
   fn: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   let timer: ReturnType<typeof setTimeout> | null = null
-  
+
   return function (this: any, ...args: Parameters<T>) {
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
@@ -64,10 +64,10 @@ export function debounce<T extends (...args: any[]) => any>(
 // 节流函数
 export function throttle<T extends (...args: any[]) => any>(
   fn: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   let lastTime = 0
-  
+
   return function (this: any, ...args: Parameters<T>) {
     const now = Date.now()
     if (now - lastTime >= delay) {
@@ -80,30 +80,30 @@ export function throttle<T extends (...args: any[]) => any>(
 // 对象深拷贝
 export function deepClone<T>(obj: T): T {
   if (obj === null || typeof obj !== 'object') return obj
-  
-  const clone = Array.isArray(obj) ? [] : {}
-  
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      const value = obj[key]
-      clone[key] = typeof value === 'object' ? deepClone(value) : value
+
+  const clone: any = Array.isArray(obj) ? [] : {}
+
+  for (const key in obj as any) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = (obj as any)[key]
+      clone[key] = typeof value === 'object' && value !== null ? deepClone(value) : value
     }
   }
-  
+
   return clone as T
 }
 
 // URL 参数拼接
 export function buildQueryString(params: Record<string, any>): string {
   const query = new URLSearchParams()
-  
-  Object.keys(params).forEach(key => {
+
+  Object.keys(params).forEach((key) => {
     const value = params[key]
     if (value !== null && value !== undefined && value !== '') {
       query.append(key, String(value))
     }
   })
-  
+
   return query.toString() ? '?' + query.toString() : ''
 }
 
@@ -116,7 +116,7 @@ export const statusMap: Record<string, { text: string; type: string }> = {
   archived: { text: '已归档', type: 'archived' },
   pending: { text: '待处理', type: 'pending' },
   replied: { text: '已回复', type: 'replied' },
-  closed: { text: '已关闭', type: 'closed' }
+  closed: { text: '已关闭', type: 'closed' },
 }
 
 // 获取状态文本
@@ -145,7 +145,8 @@ export function stripHtml(html: string): string {
 }
 
 // 截取文本（带省略号）
-export function truncate(text: string, length: number): string {
-  if (text.length <= length) return text
-  return text.slice(0, length) + '...'
+export function truncate(text: string | null | undefined, length: number): string {
+  const value = typeof text === 'string' ? text : ''
+  if (value.length <= length) return value
+  return value.slice(0, length) + '...'
 }

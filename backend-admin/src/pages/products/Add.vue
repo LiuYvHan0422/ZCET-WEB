@@ -35,10 +35,18 @@
             </div>
             <div class="form-group">
               <label>分类 <span class="required">*</span></label>
-              <select class="form-control" v-model="form.category" required>
-                <option value="">请选择分类</option>
-                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-              </select>
+              <input
+                type="text"
+                class="form-control"
+                v-model.trim="form.category"
+                list="product-category-options"
+                placeholder="请输入或选择分类"
+                required
+              />
+              <datalist id="product-category-options">
+                <option v-for="cat in categories" :key="cat" :value="cat" />
+              </datalist>
+              <p class="hint">可直接输入新分类，保存后会自动加入建议列表。</p>
             </div>
           </div>
           <div class="form-row">
@@ -140,7 +148,8 @@ const submitting = ref(false)
 const editorRef = ref<HTMLElement | null>(null)
 const editor = shallowRef(null)
 
-const categories = ref(['套装', '礼盒', '单品', '限量版'])
+const DEFAULT_CATEGORIES = ['套装', '礼盒', '单品', '限量版']
+const categories = ref<string[]>([...DEFAULT_CATEGORIES])
 
 const form = reactive({
   name: '',
@@ -154,6 +163,29 @@ const form = reactive({
   isActive: true,
   isFeatured: false
 })
+
+const normalizeCategories = (raw: unknown): string[] => {
+  if (!Array.isArray(raw)) return []
+
+  return Array.from(
+    new Set(
+      raw
+        .map(item => String(item ?? '').trim())
+        .filter(Boolean)
+    )
+  )
+}
+
+const fetchCategories = async () => {
+  try {
+    const response = await api.get<any>('/products/categories')
+    const remoteCategories = normalizeCategories(response?.data ?? response)
+    categories.value = remoteCategories.length > 0 ? remoteCategories : [...DEFAULT_CATEGORIES]
+  } catch (error) {
+    console.warn('获取分类失败，使用默认分类:', error)
+    categories.value = [...DEFAULT_CATEGORIES]
+  }
+}
 
 const initEditor = () => {
   if (editorRef.value && !editor.value) {
@@ -251,6 +283,7 @@ const handleReset = () => {
 
 onMounted(() => {
   initEditor()
+  fetchCategories()
 })
 
 onBeforeUnmount(() => {

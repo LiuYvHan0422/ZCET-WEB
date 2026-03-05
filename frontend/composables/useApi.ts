@@ -25,7 +25,18 @@ async function request<T>(
   })
   
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
+    let errorMessage = `HTTP error! status: ${response.status}`
+    try {
+      const errorBody = await response.json()
+      if (Array.isArray(errorBody?.message) && errorBody.message.length > 0) {
+        errorMessage = String(errorBody.message[0])
+      } else if (typeof errorBody?.message === 'string' && errorBody.message.trim()) {
+        errorMessage = errorBody.message
+      }
+    } catch {
+      // ignore parse errors and keep fallback error message
+    }
+    throw new Error(errorMessage)
   }
   
   return response.json()

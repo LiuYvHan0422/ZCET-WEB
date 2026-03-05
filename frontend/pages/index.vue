@@ -3,13 +3,15 @@
     <!-- 首页 Banner -->
     <section class="hero">
       <div class="container">
-        <h1 class="hero-title">专业品质，值得信赖</h1>
-        <p class="hero-subtitle">
-          我们提供优质的产品和服务，致力于为客户创造最大价值
-        </p>
-        <div class="hero-buttons">
-          <a href="#products" class="btn btn-white">浏览商品</a>
-          <a href="#contact" class="btn btn-outline-white">联系我们</a>
+        <div class="hero-content">
+          <h1 class="hero-title">专业品质，值得信赖</h1>
+          <p class="hero-subtitle">
+            我们提供优质的产品和服务，致力于为客户创造最大价值
+          </p>
+          <div class="hero-buttons">
+            <a href="#products" class="btn btn-white">浏览商品</a>
+            <a href="#contact" class="btn btn-outline-white">联系我们</a>
+          </div>
         </div>
       </div>
     </section>
@@ -19,32 +21,32 @@
       <div class="container">
         <div class="section-title">
           <h2>为什么选择我们</h2>
-          <p>专业团队，优质服务，只为您的满意</p>
+          <p>革新变压器干燥模式，告别高能耗、低效率的传统工艺，引领行业技术升级。</p>
         </div>
         
         <div class="features-grid">
           <div class="feature-card">
-            <div class="feature-card-icon">🚚</div>
-            <h3 class="feature-card-title">快速发货</h3>
-            <p class="feature-card-text">48小时内发货，确保您尽快收到商品</p>
+            <div class="feature-card-icon">⚡</div>
+            <h3 class="feature-card-title">颠覆传统</h3>
+            <p class="feature-card-text">革新变压器干燥模式，告别高能耗、低效率的传统工艺，引领行业技术升级。</p>
           </div>
           
           <div class="feature-card">
-            <div class="feature-card-icon">💎</div>
-            <h3 class="feature-card-title">品质保证</h3>
-            <p class="feature-card-text">严格质量把控，每件产品都经过检验</p>
+            <div class="feature-card-icon">📈</div>
+            <h3 class="feature-card-title">降本增效</h3>
+            <p class="feature-card-text">大幅缩短干燥周期，降低人力与能源成本，显著提升生产效率与投资回报。</p>
           </div>
           
           <div class="feature-card">
-            <div class="feature-card-icon">🔒</div>
-            <h3 class="feature-card-title">安全支付</h3>
-            <p class="feature-card-text">多种支付方式，安全便捷有保障</p>
+            <div class="feature-card-icon">🛡️</div>
+            <h3 class="feature-card-title">品质升级</h3>
+            <p class="feature-card-text">精准控温、均匀干燥，有效提升变压器绝缘性能与使用寿命，保障设备长期稳定运行。</p>
           </div>
           
           <div class="feature-card">
-            <div class="feature-card-icon">🎧</div>
-            <h3 class="feature-card-title">专业服务</h3>
-            <p class="feature-card-text">7×24小时客服，随时为您解答疑问</p>
+            <div class="feature-card-icon">🌿</div>
+            <h3 class="feature-card-title">绿色节能</h3>
+            <p class="feature-card-text">相比传统方式能耗降低显著，助力企业实现低碳生产，践行可持续发展理念。</p>
           </div>
         </div>
       </div>
@@ -75,7 +77,13 @@
             >
               <NuxtLink :to="`/product/${product.id}`">
                 <div class="product-card-image">
-                  {{ product.icon || '📦' }}
+                  <img
+                    v-if="getProductImage(product)"
+                    :src="getProductImage(product)"
+                    :alt="product.name"
+                    loading="lazy"
+                  >
+                  <span v-else>{{ product.icon || '📦' }}</span>
                 </div>
                 <div class="product-card-body">
                   <h3 class="product-card-name">{{ product.name }}</h3>
@@ -105,7 +113,15 @@
     <section class="section-about" id="about">
       <div class="container">
         <div class="about-content">
-          <div class="about-image">🏢</div>
+          <div class="about-image">
+            <img
+              v-if="companyLogoUrl"
+              :src="companyLogoUrl"
+              :alt="company?.name || 'Company Logo'"
+              loading="lazy"
+            >
+            <span v-else>🏢</span>
+          </div>
           <div class="about-text">
             <h2>关于我们</h2>
             <p v-if="company?.aboutContent">
@@ -145,7 +161,7 @@
           <p>有任何问题，欢迎随时与我们联系</p>
         </div>
         
-        <div class="contact-grid">
+        <div class="contact-grid" :class="{ 'contact-grid-has-qrcode': !!companyQrcodeUrl }">
           <div class="contact-card">
             <div class="contact-card-icon">📞</div>
             <h3 class="contact-card-title">电话咨询</h3>
@@ -164,7 +180,19 @@
             <div class="contact-card-icon">📍</div>
             <h3 class="contact-card-title">公司地址</h3>
             <p class="contact-card-text">{{ company?.address || '某某省某某市某某区' }}</p>
-            <p v-if="company?.address" class="contact-card-text"></p>
+            <p v-if="!company?.address" class="contact-card-text">某某路88号</p>
+          </div>
+
+          <div v-if="companyQrcodeUrl" class="contact-card contact-card-qrcode">
+            <div class="contact-card-icon">微</div>
+            <h3 class="contact-card-title">官方二维码</h3>
+            <img
+              :src="companyQrcodeUrl"
+              alt="公司二维码"
+              class="company-qrcode"
+              loading="lazy"
+            />
+            <p class="contact-card-text qrcode-tip">微信扫码咨询</p>
           </div>
         </div>
       </div>
@@ -177,12 +205,14 @@ import { ref, onMounted, computed } from 'vue'
 import { useModal } from '~/composables/useModal'
 import { apiGet } from '~/composables/useApi'
 import { useSeo } from '~/composables/useSeo'
+import { useMediaUrl } from '~/composables/useMediaUrl'
 
 // 使用 SEO 配置
 const { seo, fetchSeo } = useSeo()
 
 // 使用弹窗
 const { openModal } = useModal()
+const { normalizeMediaUrl } = useMediaUrl()
 
 // 公司信息
 interface Company {
@@ -194,9 +224,13 @@ interface Company {
   email: string
   address: string
   foundedYear: string
+  logo?: string
+  qrcode?: string
 }
 
 const company = ref<Company | null>(null)
+const companyLogoUrl = computed(() => normalizeMediaUrl(company.value?.logo))
+const companyQrcodeUrl = computed(() => normalizeMediaUrl(company.value?.qrcode))
 
 // 商品数据 - 从 API 获取
 interface Product {
@@ -211,6 +245,10 @@ interface Product {
 
 const products = ref<Product[]>([])
 const loading = ref(true)
+
+const getProductImage = (product: Product): string => {
+  return normalizeMediaUrl(product.image)
+}
 
 // 格式化价格
 const formatPrice = (price: any): string => {
@@ -297,5 +335,108 @@ useHead({
 
 .product-card a {
   display: block;
+}
+
+.section-about .about-image {
+  overflow: hidden;
+}
+
+.section-about .about-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: var(--white);
+}
+
+.section-about .about-image span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--white);
+  font-size: 64px;
+}
+
+.section-contact {
+  padding: 48px 0 50px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f5f7fb 100%);
+}
+
+.section-contact .contact-grid.contact-grid-has-qrcode {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.section-contact .contact-card {
+  padding: 24px 18px;
+  min-height: 216px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e6edf7;
+  box-shadow: 0 10px 24px rgba(17, 39, 83, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.section-contact .contact-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(17, 39, 83, 0.1);
+  border-color: #d7e5f8;
+}
+
+.contact-card-qrcode {
+  text-align: center;
+}
+
+.company-qrcode {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  margin: 10px auto 0;
+  border-radius: 8px;
+  background: var(--white);
+  padding: 4px;
+  display: block;
+}
+
+.qrcode-tip {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.section-contact .section-title {
+  margin-bottom: 34px;
+}
+
+.section-contact .contact-card-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  font-size: 24px;
+}
+
+.section-contact .contact-card-title {
+  margin-bottom: 8px;
+}
+
+.section-contact .contact-card-text {
+  margin-bottom: 2px;
+  line-height: 1.55;
+}
+
+@media (max-width: 1024px) {
+  .section-contact .contact-grid.contact-grid-has-qrcode {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .section-contact .contact-grid.contact-grid-has-qrcode {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

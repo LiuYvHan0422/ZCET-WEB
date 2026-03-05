@@ -29,7 +29,13 @@
           
           <template v-else>
             <header class="article-header">
-              <div class="article-icon">{{ news.icon || '📰' }}</div>
+              <img
+                v-if="getNewsImage(news)"
+                class="article-cover"
+                :src="getNewsImage(news)"
+                :alt="news.title"
+              >
+              <div v-else class="article-icon">{{ news.icon || '📰' }}</div>
               <h1 class="article-title">{{ news.title }}</h1>
               <time class="article-date">{{ news.date }}</time>
             </header>
@@ -55,9 +61,11 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { apiGet } from '~/composables/useApi'
 import { useSeo } from '~/composables/useSeo'
+import { useMediaUrl } from '~/composables/useMediaUrl'
 
 // 使用 SEO 配置
 const { seo, fetchSeo } = useSeo()
+const { normalizeMediaUrl } = useMediaUrl()
 
 const route = useRoute()
 const newsId = route.params.id
@@ -71,6 +79,8 @@ interface News {
   date: string
   icon: string
   category?: string
+  coverImage?: string
+  image?: string
 }
 
 const news = ref<News>({
@@ -83,6 +93,10 @@ const news = ref<News>({
 
 const loading = ref(true)
 const error = ref('')
+
+const getNewsImage = (item: News): string => {
+  return normalizeMediaUrl(item.coverImage || item.image)
+}
 
 // 获取新闻详情
 const fetchNews = async () => {
@@ -189,6 +203,14 @@ useHead({
 
 .article-icon {
   font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.article-cover {
+  width: 100%;
+  max-height: 360px;
+  object-fit: cover;
+  border-radius: 12px;
   margin-bottom: 20px;
 }
 

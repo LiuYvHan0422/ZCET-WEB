@@ -388,3 +388,26 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* wangEditor overlay/layer fixes */
+.w-e-full-screen-container {
+  z-index: 3000 !important;
+  background: #fff;
+}
+
+.w-e-bar-item .w-e-select-list,
+.w-e-bar-item .w-e-drop-panel,
+.w-e-bar-item-group .w-e-bar-item-menus-container,
+.w-e-modal {
+  z-index: 3010 !important;
+}
+
+.wang-toolbar .w-e-toolbar {
+  flex-wrap: wrap !important;
+  overflow: visible !important;
+}
+
+.wang-toolbar .w-e-bar-item,
+.wang-toolbar .w-e-bar-divider {
+  flex-shrink: 0;
+}

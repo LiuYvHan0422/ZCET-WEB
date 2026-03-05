@@ -19,7 +19,9 @@ export class SeedService implements OnModuleInit {
     }
 
     if (!this.dataSource) {
-      this.logger.warn("DataSource is not available, skip development seeding.");
+      this.logger.warn(
+        "DataSource is not available, skip development seeding.",
+      );
       return;
     }
 

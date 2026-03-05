@@ -4,7 +4,7 @@
       <NuxtLink to="/" class="logo">
         {{ siteTitle }}
       </NuxtLink>
-      
+
       <nav class="nav">
         <NuxtLink
           v-for="item in navItems"
@@ -16,7 +16,7 @@
           {{ item.name }}
         </NuxtLink>
       </nav>
-      
+
       <button class="btn btn-primary" @click="handleGetQuote">
         获取报价
       </button>
@@ -25,21 +25,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useModal } from '~/composables/useModal'
 import { useSeo } from '~/composables/useSeo'
 
 const route = useRoute()
 const { openModal } = useModal()
-const { fetchSeo, getSiteTitle } = useSeo()
+const { seo, fetchSeo } = useSeo()
 
-const siteTitle = ref('精品独立站')
+// 在首屏渲染前拉取 SEO，避免先显示默认站点名再闪烁更新
+await fetchSeo()
 
-onMounted(async () => {
-  const seo = await fetchSeo()
-  siteTitle.value = seo.siteTitle
-})
+const siteTitle = computed(() => seo.value.siteTitle || '沈阳振昌能源科技有限公司')
 
 const navItems = [
   { name: '首页', path: '/' },
@@ -47,23 +45,18 @@ const navItems = [
   { name: '新闻动态', path: '/news' },
   { name: '关于我们', path: '/about' },
   { name: '荣誉资质', path: '/certificates' },
-  { name: '联系我们', path: '/#contact' }
+  { name: '联系我们', path: '/#contact' },
 ]
 
 const isActive = (path: string) => {
-  // 首页精确匹配
-  if (path === '/') {
-    return route.path === '/'
-  }
+  if (path === '/') return route.path === '/'
 
-  // 处理带 # 的路径（如 /#contact）
   if (path.includes('#')) {
     const [pathname, hash] = path.split('#')
     const currentHash = route.hash.replace('#', '')
     return route.path === pathname && currentHash === hash
   }
 
-  // 普通路径精确匹配
   return route.path === path
 }
 

@@ -38,7 +38,13 @@
           >
             <NuxtLink :to="`/news/${news.id}`">
               <div class="news-card-image">
-                {{ news.icon || '📰' }}
+                <img
+                  v-if="getNewsImage(news)"
+                  :src="getNewsImage(news)"
+                  :alt="news.title"
+                  loading="lazy"
+                >
+                <span v-else>{{ news.icon || '📰' }}</span>
               </div>
               <div class="news-card-body">
                 <time class="news-card-date">{{ news.date }}</time>
@@ -91,9 +97,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { apiGet } from '~/composables/useApi'
 import { useSeo } from '~/composables/useSeo'
+import { useMediaUrl } from '~/composables/useMediaUrl'
 
 // 使用 SEO 配置
 const { seo, fetchSeo } = useSeo()
+const { normalizeMediaUrl } = useMediaUrl()
 
 // 新闻数据类型
 interface News {
@@ -104,11 +112,17 @@ interface News {
   date: string
   icon: string
   category?: string
+  coverImage?: string
+  image?: string
 }
 
 const newsList = ref<News[]>([])
 const loading = ref(true)
 const error = ref('')
+
+const getNewsImage = (item: News): string => {
+  return normalizeMediaUrl(item.coverImage || item.image)
+}
 
 // 获取新闻列表
 const fetchNews = async () => {
@@ -197,3 +211,4 @@ useHead({
   }
 }
 </style>
+

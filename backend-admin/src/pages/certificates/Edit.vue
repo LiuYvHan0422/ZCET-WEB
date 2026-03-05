@@ -22,6 +22,7 @@
                 <option value="patent">专利证书</option>
                 <option value="iso">体系认证</option>
                 <option value="award">获奖荣誉</option>
+                <option value="qualification">企业资质</option>
                 <option value="other">其他资质</option>
               </select>
             </div>

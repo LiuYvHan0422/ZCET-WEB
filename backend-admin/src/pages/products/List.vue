@@ -114,8 +114,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useList, useDelete, useUpdateStatus } from '@/composables/useApi'
+import { api } from '@/utils/request'
 import { formatPrice } from '@/utils/helpers'
 import StatusBadge from '@/components/StatusBadge.vue'
 import Pagination from '@/components/Pagination.vue'
@@ -137,7 +138,8 @@ const { handleDelete } = useDelete('/products')
 const { updateStatus } = useUpdateStatus('/products')
 
 const selectedIds = ref<number[]>([])
-const categories = ref(['套装', '礼盒', '单品', '限量版'])
+const DEFAULT_CATEGORIES = ['套装', '礼盒', '单品', '限量版']
+const categories = ref<string[]>([...DEFAULT_CATEGORIES])
 
 const selectAll = computed({
   get: () => products.value.length > 0 && selectedIds.value.length === products.value.length,
@@ -152,6 +154,29 @@ const selectAll = computed({
 
 const handleSelectAll = () => {
   // selectAll computed 会自动处理
+}
+
+const normalizeCategories = (raw: unknown): string[] => {
+  if (!Array.isArray(raw)) return []
+
+  return Array.from(
+    new Set(
+      raw
+        .map(item => String(item ?? '').trim())
+        .filter(Boolean)
+    )
+  )
+}
+
+const fetchCategories = async () => {
+  try {
+    const response = await api.get<any>('/products/categories')
+    const remoteCategories = normalizeCategories(response?.data ?? response)
+    categories.value = remoteCategories.length > 0 ? remoteCategories : [...DEFAULT_CATEGORIES]
+  } catch (error) {
+    console.warn('获取分类失败，使用默认分类:', error)
+    categories.value = [...DEFAULT_CATEGORIES]
+  }
 }
 
 const handleBatchDelete = async () => {
@@ -171,6 +196,7 @@ const handleStatusChange = async (id: number, status: string) => {
 }
 
 onMounted(() => {
+  fetchCategories()
   fetchList()
 })
 </script>

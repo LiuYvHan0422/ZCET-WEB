@@ -78,7 +78,11 @@ export class UploadService {
     }
 
     const folder = this.normalizeType(type || "common");
-    const objectKey = this.buildObjectKey(folder, file.originalname, file.mimetype);
+    const objectKey = this.buildObjectKey(
+      folder,
+      file.originalname,
+      file.mimetype,
+    );
 
     try {
       await this.client.put(objectKey, file.buffer, {
@@ -87,9 +91,10 @@ export class UploadService {
         },
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Upload failed";
-      throw new InternalServerErrorException(`Failed to upload to OSS: ${message}`);
+      const message = error instanceof Error ? error.message : "Upload failed";
+      throw new InternalServerErrorException(
+        `Failed to upload to OSS: ${message}`,
+      );
     }
 
     return {

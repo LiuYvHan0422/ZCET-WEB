@@ -54,7 +54,15 @@
             <td><input v-model="selectedIds" type="checkbox" :value="news.id" /></td>
             <td>
               <div class="news-item">
-                <div class="news-thumb">{{ news.coverImage || news.image || '📰' }}</div>
+                <div class="news-thumb">
+                  <img
+                    v-if="getNewsImage(news)"
+                    :src="getNewsImage(news)"
+                    :alt="news.title || '新闻封面'"
+                    loading="lazy"
+                  />
+                  <span v-else>📰</span>
+                </div>
                 <div class="news-info">
                   <h4>{{ news.title }}</h4>
                   <div class="news-meta">ID: {{ news.id }}</div>
@@ -108,6 +116,7 @@ const {
 
 const { handleDelete } = useDelete('/news');
 const selectedIds = ref<number[]>([]);
+const getNewsImage = (news: any): string => (news?.coverImage || news?.image || '').trim();
 
 const selectAll = computed({
   get: () => newsList.value.length > 0 && selectedIds.value.length === newsList.value.length,
@@ -135,6 +144,13 @@ onMounted(fetchList);
   align-items: center;
   justify-content: center;
   font-size: 20px;
+  overflow: hidden;
+}
+
+.news-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .news-info h4 {

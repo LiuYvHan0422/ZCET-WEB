@@ -21,10 +21,18 @@
             </div>
             <div class="form-group">
               <label>分类 <span class="required">*</span></label>
-              <select class="form-control" v-model="form.category" required>
-                <option value="">请选择分类</option>
-                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-              </select>
+              <input
+                type="text"
+                class="form-control"
+                v-model.trim="form.category"
+                list="product-category-options"
+                placeholder="请输入或选择分类"
+                required
+              />
+              <datalist id="product-category-options">
+                <option v-for="cat in categories" :key="cat" :value="cat" />
+              </datalist>
+              <p class="hint">可直接输入新分类，保存后会自动加入建议列表。</p>
             </div>
           </div>
           <div class="form-row">
@@ -93,8 +101,44 @@ const loading = ref(false)
 const submitting = ref(false)
 const editorRef = ref<HTMLElement | null>(null)
 const editor = shallowRef(null)
-const categories = ref(['套装', '礼盒', '单品', '限量版'])
+const DEFAULT_CATEGORIES = ['套装', '礼盒', '单品', '限量版']
+const categories = ref<string[]>([...DEFAULT_CATEGORIES])
 const form = reactive({ name: '', sku: '', category: '', price: 0, stock: 0, image: '', shortDescription: '', description: '', isActive: true, isFeatured: false })
+
+const normalizeCategories = (raw: unknown): string[] => {
+  if (!Array.isArray(raw)) return []
+
+  return Array.from(
+    new Set(
+      raw
+        .map(item => String(item ?? '').trim())
+        .filter(Boolean)
+    )
+  )
+}
+
+const mergeCategories = (raw: unknown, currentCategory = ''): string[] => {
+  const remote = normalizeCategories(raw)
+  const next = remote.length > 0 ? remote : [...DEFAULT_CATEGORIES]
+  const current = String(currentCategory ?? '').trim()
+
+  if (current && !next.includes(current)) {
+    next.unshift(current)
+  }
+
+  return Array.from(new Set(next))
+}
+
+const fetchCategories = async (currentCategory = '') => {
+  try {
+    const response = await api.get<any>('/products/categories')
+    categories.value = mergeCategories(response?.data ?? response, currentCategory)
+  } catch (error) {
+    console.warn('获取分类失败，使用默认分类:', error)
+    categories.value = mergeCategories([], currentCategory)
+  }
+}
+
 const fetchProduct = async () => {
   loading.value = true
   try {
@@ -104,6 +148,7 @@ const fetchProduct = async () => {
     
     if (data && data.id) {
       Object.assign(form, data)
+      fetchCategories(form.category)
       setTimeout(initEditor, 100)
     }
   } catch (error) { 
@@ -180,7 +225,10 @@ const handleSubmit = async () => {
   finally { submitting.value = false }
 }
 const handleReset = () => { if (confirm('确定要重置吗？')) fetchProduct() }
-onMounted(fetchProduct)
+onMounted(() => {
+  fetchCategories()
+  fetchProduct()
+})
 onBeforeUnmount(() => {
   if (editor.value) {
     editor.value.destroy()

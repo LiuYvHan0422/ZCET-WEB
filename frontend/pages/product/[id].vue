@@ -25,9 +25,14 @@
             <!-- 商品图片 -->
             <div class="product-gallery">
               <div class="product-main-image">
-                {{ product.icon }}
+                <img
+                  v-if="activeImage"
+                  :src="activeImage"
+                  :alt="product.name || '商品图片'"
+                >
+                <span v-else>{{ product.icon || '📦' }}</span>
               </div>
-              <div class="product-thumbnails">
+              <div v-if="productThumbnails.length > 0" class="product-thumbnails">
                 <div
                   v-for="(thumb, index) in productThumbnails"
                   :key="index"
@@ -35,7 +40,7 @@
                   :class="{ active: activeThumbnail === index }"
                   @click="activeThumbnail = index"
                 >
-                  {{ thumb }}
+                  <img :src="thumb" :alt="`${product.name || '商品'}-${index + 1}`">
                 </div>
               </div>
             </div>
@@ -43,7 +48,7 @@
             <!-- 商品信息 -->
             <div class="product-info-section">
               <h1 class="product-title">{{ product.name || '商品详情' }}</h1>
-              <p class="product-subtitle" v-html="formatDescription(product.description)"></p>
+              <p class="product-subtitle">{{ formatSummary(product.shortDescription, 120) || '暂无简短描述' }}</p>
               
               <div class="product-price-section">
                 <span class="price-label">价格</span>
@@ -74,17 +79,12 @@
                 </button>
               </div>
 
-              <div class="product-features">
+              <div v-if="parseJson(product.features).length > 0" class="product-features">
                 <h3>产品特点</h3>
                 <ul>
                   <li v-for="(feature, index) in parseJson(product.features)" :key="index">
                     {{ feature }}
                   </li>
-                  <!-- 如果 features 为空，使用 description 作为备选 -->
-                  <li v-if="!product.features && product.description">
-                    {{ formatDescription(product.description) }}
-                  </li>
-                  <li v-if="!product.features && !product.description">暂无特点描述</li>
                 </ul>
               </div>
             </div>
@@ -124,11 +124,17 @@
               >
                 <NuxtLink :to="`/product/${relatedProduct.id}`">
                   <div class="product-card-image">
-                    {{ relatedProduct.icon || '📦' }}
+                    <img
+                      v-if="getProductImage(relatedProduct)"
+                      :src="getProductImage(relatedProduct)"
+                      :alt="relatedProduct.name"
+                      loading="lazy"
+                    >
+                    <span v-else>{{ relatedProduct.icon || '📦' }}</span>
                   </div>
                   <div class="product-card-body">
                     <h3 class="product-card-name">{{ relatedProduct.name }}</h3>
-                    <p class="product-card-desc" v-html="formatDescription(relatedProduct.description)"></p>
+                    <p class="product-card-desc">{{ formatSummary(relatedProduct.shortDescription, 72) || '暂无简短描述' }}</p>
                     <p class="product-card-price">
                       ¥{{ formatPrice(relatedProduct.price) }}
                     </p>
@@ -144,17 +150,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useModal } from '~/composables/useModal'
 import { apiGet } from '~/composables/useApi'
 import { useSeo } from '~/composables/useSeo'
+import { useMediaUrl } from '~/composables/useMediaUrl'
 
 // 使用 SEO 配置
 const { seo, fetchSeo } = useSeo()
 
 const route = useRoute()
 const { openModal } = useModal()
+const { normalizeMediaUrl, normalizeMediaList } = useMediaUrl()
 
 // 商品ID
 const productId = Number(route.params.id) || 1
@@ -190,9 +198,23 @@ const relatedProducts = ref<Product[]>([])
 const loading = ref(true)
 const error = ref('')
 
-// 商品缩略图
-const productThumbnails = computed(() => product.value.image ? [product.value.image] : [product.value.icon || '📦'])
 const activeThumbnail = ref(0)
+const productThumbnails = computed(() => normalizeMediaList(product.value.image))
+const activeImage = computed(() => productThumbnails.value[activeThumbnail.value] || '')
+
+watch(productThumbnails, (images) => {
+  if (images.length === 0) {
+    activeThumbnail.value = 0
+    return
+  }
+  if (activeThumbnail.value >= images.length) {
+    activeThumbnail.value = 0
+  }
+})
+
+const getProductImage = (item: Product): string => {
+  return normalizeMediaUrl(item.image)
+}
 
 // 获取商品详情
 const fetchProduct = async () => {
@@ -266,6 +288,12 @@ const formatDescription = (desc: any): string => {
   return desc.replace(/<[^>]*>/g, '').trim() || '暂无描述'
 }
 
+const formatSummary = (desc: any, maxLength = 120): string => {
+  const plain = formatDescription(desc)
+  if (!plain || plain === '暂无描述') return plain
+  return plain.length > maxLength ? `${plain.slice(0, maxLength)}...` : plain
+}
+
 // 格式化描述，保留 HTML 标签
 const formatHtml = (desc: any): string => {
   if (!desc) return '暂无描述'
@@ -293,7 +321,7 @@ onMounted(async () => {
 useHead({
   title: computed(() => `${product.value.name || '商品详情'} - ${seo.value.siteTitle}`),
   meta: [
-    { name: 'description', content: computed(() => product.value.description || '') }
+    { name: 'description', content: computed(() => product.value.shortDescription || product.value.description || '') }
   ]
 })
 </script>
@@ -340,6 +368,13 @@ useHead({
   align-items: center;
   justify-content: center;
   font-size: 120px;
+  overflow: hidden;
+}
+
+.product-main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .product-thumbnails {
@@ -359,6 +394,13 @@ useHead({
   cursor: pointer;
   border: 2px solid transparent;
   transition: all 0.3s;
+  overflow: hidden;
+}
+
+.product-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .product-thumbnail:hover,

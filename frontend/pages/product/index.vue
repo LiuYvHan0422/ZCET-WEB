@@ -56,11 +56,17 @@
           >
             <NuxtLink :to="`/product/${product.id}`">
               <div class="product-card-image">
-                {{ product.icon || '📦' }}
+                <img
+                  v-if="getProductImage(product)"
+                  :src="getProductImage(product)"
+                  :alt="product.name"
+                  loading="lazy"
+                >
+                <span v-else>{{ product.icon || '📦' }}</span>
               </div>
               <div class="product-card-body">
                 <h3 class="product-card-name">{{ product.name }}</h3>
-                <p class="product-card-desc">{{ formatText(product.description) }}</p>
+                <p class="product-card-desc">{{ formatSummary(product.shortDescription) || '暂无简短描述' }}</p>
                 <p class="product-card-price">
                   ¥{{ formatPrice(product.price) }}
                 </p>
@@ -111,9 +117,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { apiGet } from '~/composables/useApi'
 import { useSeo } from '~/composables/useSeo'
+import { useMediaUrl } from '~/composables/useMediaUrl'
 
 // 使用 SEO 配置
 const { seo, fetchSeo } = useSeo()
+const { normalizeMediaUrl } = useMediaUrl()
 
 // 商品数据 - 从 API 获取
 interface Product {
@@ -131,6 +139,10 @@ const products = ref<Product[]>([])
 const loading = ref(true)
 const error = ref('')
 
+const getProductImage = (product: Product): string => {
+  return normalizeMediaUrl(product.image)
+}
+
 // 格式化价格
 const formatPrice = (price: any): string => {
   const num = typeof price === 'number' ? price : parseFloat(price) || 0
@@ -141,6 +153,12 @@ const formatPrice = (price: any): string => {
 const formatText = (text: any): string => {
   if (!text) return ''
   return text.replace(/<[^>]*>/g, '').trim()
+}
+
+const formatSummary = (text: any, maxLength = 72): string => {
+  const plain = formatText(text)
+  if (!plain) return ''
+  return plain.length > maxLength ? `${plain.slice(0, maxLength)}...` : plain
 }
 
 // 获取商品列表

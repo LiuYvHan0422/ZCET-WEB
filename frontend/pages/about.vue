@@ -26,7 +26,15 @@
         
         <template v-else-if="company">
           <div class="about-content">
-            <div class="about-image">{{ company.name?.charAt(0) || '🏢' }}</div>
+            <div class="about-image">
+              <img
+                v-if="companyLogoUrl"
+                :src="companyLogoUrl"
+                :alt="company.name || 'Company Logo'"
+                loading="lazy"
+              />
+              <span v-else>{{ company.name?.charAt(0) || 'C' }}</span>
+            </div>
             <div class="about-text">
               <h2>{{ company.name || '关于我们' }}</h2>
               <p v-if="company.shortDescription">{{ company.shortDescription }}</p>
@@ -109,26 +117,26 @@
                   <p>{{ value.description }}</p>
                 </div>
               </template>
-              <template v-else>
+                            <template v-else>
                 <div class="value-card">
                   <div class="value-icon">💼</div>
                   <h3>诚信经营</h3>
-                  <p>诚实守信是我们的立业之本</p>
+                  <p>诚实守信是我们的立业之本，以透明合规的合作赢得客户长期信赖。</p>
                 </div>
                 <div class="value-card">
                   <div class="value-icon">🎯</div>
                   <h3>品质至上</h3>
-                  <p>严格把控每一个细节</p>
+                  <p>严格把控每一个细节，确保真空辐射干燥系统稳定可靠、性能卓越，为变压器提质保驾护航。</p>
                 </div>
                 <div class="value-card">
                   <div class="value-icon">🤝</div>
                   <h3>客户为先</h3>
-                  <p>客户的需求是我们的追求</p>
+                  <p>客户的需求是我们的追求，提供定制化干燥解决方案，助力企业降本增效。</p>
                 </div>
                 <div class="value-card">
                   <div class="value-icon">💡</div>
                   <h3>创新驱动</h3>
-                  <p>不断创新，引领行业发展</p>
+                  <p>不断创新，引领行业发展，颠覆传统变压器干燥模式，实现高效节能的绿色生产。</p>
                 </div>
               </template>
             </div>
@@ -138,7 +146,7 @@
         <!-- 无数据后备 -->
         <template v-else>
           <div class="about-content">
-            <div class="about-image">🏢</div>
+            <div class="about-image"><span>C</span></div>
             <div class="about-text">
               <h2>关于我们</h2>
               <p>
@@ -178,7 +186,7 @@
           <p>有任何问题，欢迎随时与我们联系</p>
         </div>
         
-        <div class="contact-grid">
+        <div class="contact-grid" :class="{ 'contact-grid-has-qrcode': !!companyQrcodeUrl }">
           <div class="contact-card">
             <div class="contact-card-icon">📞</div>
             <h3 class="contact-card-title">电话咨询</h3>
@@ -197,7 +205,19 @@
             <div class="contact-card-icon">📍</div>
             <h3 class="contact-card-title">公司地址</h3>
             <p class="contact-card-text">{{ company?.address || '某某省某某市某某区' }}</p>
-            <p class="contact-card-text">{{ company?.address || '某某路88号' }}</p>
+            <p v-if="!company?.address" class="contact-card-text">某某路88号</p>
+          </div>
+
+          <div v-if="companyQrcodeUrl" class="contact-card contact-card-qrcode">
+            <div class="contact-card-icon">微</div>
+            <h3 class="contact-card-title">官方二维码</h3>
+            <img
+              :src="companyQrcodeUrl"
+              alt="公司二维码"
+              class="company-qrcode"
+              loading="lazy"
+            />
+            <p class="contact-card-text qrcode-tip">微信扫码咨询</p>
           </div>
         </div>
       </div>
@@ -208,6 +228,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { apiGet } from '~/composables/useApi'
+import { useMediaUrl } from '~/composables/useMediaUrl'
 import { useSeo } from '~/composables/useSeo'
 
 // 使用 SEO 配置
@@ -224,6 +245,8 @@ interface Company {
   phone: string
   email: string
   address: string
+  logo?: string
+  qrcode?: string
   statistics: { years: string; customers: string; satisfaction: string }
   timeline: { year: string; title: string; description: string }[]
   values: { icon: string; title: string; description: string }[]
@@ -232,6 +255,10 @@ interface Company {
 const company = ref<Company | null>(null)
 const loading = ref(true)
 const error = ref('')
+const { normalizeMediaUrl } = useMediaUrl()
+
+const companyLogoUrl = computed(() => normalizeMediaUrl(company.value?.logo))
+const companyQrcodeUrl = computed(() => normalizeMediaUrl(company.value?.qrcode))
 
 // 获取公司信息
 const fetchCompany = async () => {
@@ -270,6 +297,11 @@ useHead({
   background: var(--bg-color);
 }
 
+.section-contact {
+  padding: 48px 0 50px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f5f7fb 100%);
+}
+
 .loading, .error {
   text-align: center;
   padding: 60px;
@@ -302,11 +334,24 @@ useHead({
   height: 350px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 12px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.about-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: var(--white);
+}
+
+.about-image span {
   color: var(--white);
   font-size: 100px;
+  line-height: 1;
 }
 
 .about-text h2 {
@@ -419,6 +464,70 @@ useHead({
   font-size: 14px;
 }
 
+.contact-card-qrcode {
+  text-align: center;
+}
+
+.company-qrcode {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  margin: 10px auto 0;
+  border-radius: 8px;
+  background: var(--white);
+  padding: 4px;
+  display: block;
+}
+
+.qrcode-tip {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.section-contact .contact-grid.contact-grid-has-qrcode {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.section-contact .contact-card {
+  padding: 24px 18px;
+  min-height: 216px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e6edf7;
+  box-shadow: 0 10px 24px rgba(17, 39, 83, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.section-contact .contact-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(17, 39, 83, 0.1);
+  border-color: #d7e5f8;
+}
+
+.section-contact .section-title {
+  margin-bottom: 34px;
+}
+
+.section-contact .contact-card-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  font-size: 24px;
+}
+
+.section-contact .contact-card-title {
+  margin-bottom: 8px;
+}
+
+.section-contact .contact-card-text {
+  margin-bottom: 2px;
+  line-height: 1.55;
+}
+
 @media (max-width: 1024px) {
   .about-content {
     grid-template-columns: 1fr;
@@ -432,6 +541,10 @@ useHead({
 
   .values-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .section-contact .contact-grid.contact-grid-has-qrcode {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -466,6 +579,10 @@ useHead({
   }
 
   .values-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-contact .contact-grid.contact-grid-has-qrcode {
     grid-template-columns: 1fr;
   }
 }

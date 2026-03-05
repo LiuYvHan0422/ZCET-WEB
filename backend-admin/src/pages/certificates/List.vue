@@ -12,15 +12,22 @@
       <span class="filter-tab" :class="{ active: activeFilter === 'patent' }" @click="setFilter('patent')">专利证书</span>
       <span class="filter-tab" :class="{ active: activeFilter === 'iso' }" @click="setFilter('iso')">体系认证</span>
       <span class="filter-tab" :class="{ active: activeFilter === 'award' }" @click="setFilter('award')">获奖荣誉</span>
+      <span class="filter-tab" :class="{ active: activeFilter === 'qualification' }" @click="setFilter('qualification')">企业资质</span>
     </div>
     <div class="certificates-grid">
       <div class="certificate-card" v-for="cert in certificates" :key="cert.id">
-        <div class="certificate-img" :style="{ background: cert.bgColor }">
-          {{ cert.icon }}
+        <div class="certificate-img" :style="getCertImage(cert) ? undefined : { background: cert.bgColor }">
+          <img
+            v-if="getCertImage(cert)"
+            :src="getCertImage(cert)"
+            :alt="cert.name || cert.title || '资质图片'"
+            loading="lazy"
+          />
+          <span v-else>{{ cert.icon || '⭐' }}</span>
           <span class="certificate-type">{{ cert.type }}</span>
         </div>
         <div class="certificate-info">
-          <div class="certificate-name">{{ cert.name }}</div>
+          <div class="certificate-name">{{ cert.name || cert.title }}</div>
           <div class="certificate-meta">{{ cert.date }}</div>
           <StatusBadge :status="cert.status" />
           <div class="certificate-actions">
@@ -36,14 +43,23 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useList, useDelete } from '@/composables/useApi'
 import StatusBadge from '@/components/StatusBadge.vue'
 import Pagination from '@/components/Pagination.vue'
-const { loading, data: certificates, total, page, pageSize, fetchList, handlePageChange } = useList<any>('/certificates')
+
+const { data: certificates, total, page, pageSize, filters, fetchList, handlePageChange, handleSearch } = useList<any>('/certificates')
 const { handleDelete } = useDelete('/certificates')
+
 const activeFilter = ref('all')
-const setFilter = (filter: string) => { activeFilter.value = filter; fetchList() }
+
+const setFilter = (filter: string) => {
+  activeFilter.value = filter
+  filters.value = filter === 'all' ? {} : { type: filter }
+  handleSearch()
+}
+
+const getCertImage = (cert: any): string => (cert?.image || '').trim()
 onMounted(fetchList)
 </script>
 <style scoped>
@@ -54,6 +70,8 @@ onMounted(fetchList)
 .certificate-card { background: var(--white); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); transition: all 0.3s; }
 .certificate-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
 .certificate-img { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; position: relative; }
+.certificate-img { overflow: hidden; }
+.certificate-img img { width: 100%; height: 100%; object-fit: cover; }
 .certificate-type { position: absolute; top: 10px; left: 10px; padding: 4px 10px; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 12px; }
 .certificate-info { padding: 16px; }
 .certificate-name { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
