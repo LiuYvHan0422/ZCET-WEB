@@ -70,6 +70,12 @@
                 <p class="product-card-price">
                   ¥{{ formatPrice(product.price) }}
                 </p>
+                <button
+                  class="btn btn-primary product-card-btn"
+                  @click.prevent="handleGetQuote(product.name)"
+                >
+                  获取报价
+                </button>
               </div>
             </NuxtLink>
           </div>
@@ -118,10 +124,12 @@ import { ref, computed, onMounted } from 'vue'
 import { apiGet } from '~/composables/useApi'
 import { useSeo } from '~/composables/useSeo'
 import { useMediaUrl } from '~/composables/useMediaUrl'
+import { useModal } from '~/composables/useModal'
 
 // 使用 SEO 配置
 const { seo, fetchSeo } = useSeo()
 const { normalizeMediaUrl } = useMediaUrl()
+const { openModal } = useModal()
 
 // 商品数据 - 从 API 获取
 interface Product {
@@ -159,6 +167,10 @@ const formatSummary = (text: any, maxLength = 72): string => {
   const plain = formatText(text)
   if (!plain) return ''
   return plain.length > maxLength ? `${plain.slice(0, maxLength)}...` : plain
+}
+
+const handleGetQuote = (productName: string) => {
+  openModal(productName)
 }
 
 // 获取商品列表
@@ -304,6 +316,44 @@ useHead({
 
 .error {
   color: var(--danger);
+}
+
+.product-card-btn {
+  width: 100%;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-card {
+  height: 100%;
+}
+
+.product-card a {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.product-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.product-card-desc {
+  line-height: 1.6;
+  min-height: calc(1.6em * 3);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-card-price {
+  margin-top: auto;
+  margin-bottom: 12px;
 }
 
 @media (max-width: 768px) {

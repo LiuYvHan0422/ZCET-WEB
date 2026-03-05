@@ -28,11 +28,20 @@ export default defineNuxtConfig({
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:8001',
+          target: 'http://127.0.0.1:8001',
           changeOrigin: true,
         }
       }
     }
+  },
+
+  nitro: {
+    devProxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8001',
+        changeOrigin: true,
+      },
+    },
   },
 
   runtimeConfig: {
