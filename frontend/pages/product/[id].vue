@@ -223,15 +223,10 @@ const fetchProduct = async () => {
     error.value = ''
     
     // 获取当前商品
-    console.log('=== 开始获取商品详情 ===')
-    console.log('请求商品详情 API:', `/products/${productId}`)
     const res = await apiGet<{ code: number; data: any }>(`/products/${productId}`)
-    console.log('商品详情响应:', res)
-    console.log('res.data:', res.data)
     
     if (res.code === 200 || res.code === 0) {
       product.value = res.data || {}
-      console.log('商品数据:', product.value)
     } else {
       error.value = res.message || '获取商品详情失败'
     }
@@ -242,9 +237,10 @@ const fetchProduct = async () => {
         page: 1,
         pageSize: 4,
         category: product.value.category,
-        status: 'active'
+        status: 'active',
+        compact: 'true',
+        withCount: 'false'
       })
-      console.log('相关商品响应:', listRes)
       if (listRes.code === 200 || listRes.code === 0) {
         // 处理分页数据格式 - data 本身就是数组
         let productsData = []
@@ -254,7 +250,6 @@ const fetchProduct = async () => {
           productsData = listRes.data.items
         }
         relatedProducts.value = productsData.filter((p: any) => p.id !== productId).slice(0, 4)
-        console.log('相关商品数据:', relatedProducts.value)
       }
     }
   } catch (e: any) {
@@ -313,8 +308,7 @@ const parseJson = (data: any): string[] => {
 
 // 页面加载时获取数据
 onMounted(async () => {
-  await fetchSeo()
-  await fetchProduct()
+  await Promise.all([fetchSeo(), fetchProduct()])
 })
 
 // SEO 配置

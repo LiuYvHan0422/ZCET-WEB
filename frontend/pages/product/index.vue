@@ -168,9 +168,10 @@ const fetchProducts = async () => {
     const res = await apiGet<{ code: number; data: any }>('/products', {
       page: 1,
       pageSize: 100,
-      status: 'active'
+      status: 'active',
+      compact: 'true',
+      withCount: 'false'
     })
-    console.log('商品列表响应:', res)
     if (res.code === 200 || res.code === 0) {
       // 后端返回的分页格式: { code, message, data: [...items], pagination, timestamp }
       // data 本身就是数组
@@ -181,7 +182,6 @@ const fetchProducts = async () => {
       } else {
         products.value = []
       }
-      console.log('商品列表数据:', products.value)
     }
   } catch (e: any) {
     error.value = e.message || '获取商品失败'
@@ -247,8 +247,7 @@ const changePage = (page: number) => {
 
 // 页面加载时获取数据
 onMounted(async () => {
-  await fetchSeo()
-  await fetchProducts()
+  await Promise.all([fetchSeo(), fetchProducts()])
 })
 
 // SEO 配置

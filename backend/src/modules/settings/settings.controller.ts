@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards } from "@nestjs/common";
+import { Controller, Get, Put, Body, UseGuards, Header } from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
@@ -19,6 +19,10 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get("seo")
+  @Header(
+    "Cache-Control",
+    "public, max-age=120, s-maxage=600, stale-while-revalidate=1200",
+  )
   @ApiOperation({ summary: "获取 SEO 设置" })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getSeo() {

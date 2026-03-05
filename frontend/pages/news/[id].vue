@@ -103,7 +103,6 @@ const fetchNews = async () => {
   try {
     loading.value = true
     const res = await apiGet<any>(`/news/${newsId}`)
-    console.log('新闻详情接口返回:', res)
     
     // 兼容两种返回格式：
     // 1. { code: 200, data: NewsEntity } - 包装格式
@@ -156,8 +155,7 @@ const getStaticNews = (id: number): News | undefined => {
 }
 
 onMounted(async () => {
-  await fetchSeo()
-  await fetchNews()
+  await Promise.all([fetchSeo(), fetchNews()])
 })
 
 // SEO 配置

@@ -31,28 +31,53 @@ import { UploadModule } from "./modules/upload/upload.module";
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: "mysql",
-        host: configService.get("database.host"),
-        port: configService.get("database.port"),
-        username: configService.get("database.username"),
-        password: configService.get("database.password"),
-        database: configService.get("database.database"),
-        autoLoadEntities: true,
-        synchronize: configService.get<boolean>("database.synchronize"),
-        migrationsRun: configService.get<boolean>("database.migrationsRun"),
-        retryAttempts: 1,
-        retryDelay: 1000,
-        logging: configService.get<boolean>("database.logging")
-          ? ["query", "error"]
-          : false,
-        // mysql2 fast parser uses eval/new Function by default, which is blocked in Workers.
-        extra: {
-          disableEval: true,
-          connectTimeout: 10_000,
-        },
-        entityPrefix: "",
-      }),
+      useFactory: (configService: ConfigService) => {
+        const connectionLimit = Math.min(
+          50,
+          Math.max(2, Number(configService.get("database.connectionLimit")) || 10),
+        );
+        const queueLimit = Math.max(
+          0,
+          Number(configService.get("database.queueLimit")) || 0,
+        );
+        const connectTimeout = Math.max(
+          3000,
+          Number(configService.get("database.connectTimeout")) || 10000,
+        );
+        const keepAlive =
+          configService.get<boolean>("database.keepAlive") ?? true;
+        const keepAliveInitialDelay = Math.max(
+          1000,
+          Number(configService.get("database.keepAliveInitialDelay")) || 10000,
+        );
+
+        return {
+          type: "mysql",
+          host: configService.get("database.host"),
+          port: configService.get("database.port"),
+          username: configService.get("database.username"),
+          password: configService.get("database.password"),
+          database: configService.get("database.database"),
+          autoLoadEntities: true,
+          synchronize: configService.get<boolean>("database.synchronize"),
+          migrationsRun: configService.get<boolean>("database.migrationsRun"),
+          retryAttempts: 1,
+          retryDelay: 1000,
+          logging: configService.get<boolean>("database.logging")
+            ? ["query", "error"]
+            : false,
+          // mysql2 fast parser uses eval/new Function by default, which is blocked in Workers.
+          extra: {
+            disableEval: true,
+            connectionLimit,
+            queueLimit,
+            connectTimeout,
+            enableKeepAlive: keepAlive,
+            keepAliveInitialDelay,
+          },
+          entityPrefix: "",
+        };
+      },
       inject: [ConfigService],
     }),
 

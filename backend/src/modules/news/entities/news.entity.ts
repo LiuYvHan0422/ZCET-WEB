@@ -1,6 +1,8 @@
-import { Entity, Column } from "typeorm";
+import { Entity, Column, Index } from "typeorm";
 import { BaseEntity } from "../../../common/entities/base.entity";
 
+@Index("idx_news_published_category_created", ["isPublished", "category", "createdAt"])
+@Index("idx_news_published_date_created", ["isPublished", "date", "createdAt"])
 @Entity("news")
 export class NewsEntity extends BaseEntity {
   // 继承属性声明

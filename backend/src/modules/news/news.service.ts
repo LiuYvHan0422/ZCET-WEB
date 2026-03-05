@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, ILike, FindOptionsWhere } from "typeorm";
+import {
+  Repository,
+  ILike,
+  FindOptionsWhere,
+  SelectQueryBuilder,
+} from "typeorm";
 import { NewsEntity } from "./entities/news.entity";
 import { CreateNewsDto, UpdateNewsDto, NewsQueryDto } from "./dto/news.dto";
 import { createPaginatedResponse } from "../../common/dto/pagination.dto";
@@ -11,6 +16,16 @@ const NEWS_SORT_FIELDS: Array<keyof NewsEntity> = [
   "title",
   "date",
 ];
+
+type NewsListQuery = {
+  keyword: string;
+  category?: string;
+  status?: string;
+  sortBy: keyof NewsEntity;
+  sortOrder: "ASC" | "DESC";
+  page: number;
+  pageSize: number;
+};
 
 @Injectable()
 export class NewsService {
@@ -34,7 +49,12 @@ export class NewsService {
       sortOrder = "DESC",
       page = 1,
       pageSize = 10,
+      compact,
+      withCount,
     } = query;
+
+    const compactMode = this.parseBooleanFlag(compact, false);
+    const shouldCount = this.parseBooleanFlag(withCount, true);
 
     const where: FindOptionsWhere<NewsEntity> = {};
     if (category) {
@@ -55,8 +75,21 @@ export class NewsService {
       String(sortOrder).toUpperCase() === "ASC" ? "ASC" : "DESC";
     const safePage = Math.max(1, Number(page) || 1);
     const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
+    const queryOptions: NewsListQuery = {
+      keyword,
+      category,
+      status,
+      sortBy: safeSortBy,
+      sortOrder: safeSortOrder,
+      page: safePage,
+      pageSize: safePageSize,
+    };
 
-    const [items, total] = await this.newsRepository.findAndCount({
+    if (compactMode) {
+      return this.findAllCompact(queryOptions, shouldCount);
+    }
+
+    const commonOptions = {
       where: shouldSearch
         ? [
             { ...where, title: ILike(`%${keyword}%`) },
@@ -68,7 +101,12 @@ export class NewsService {
       },
       skip: (safePage - 1) * safePageSize,
       take: safePageSize,
-    });
+    } as const;
+
+    const items = await this.newsRepository.find(commonOptions);
+    const total = shouldCount
+      ? await this.newsRepository.count({ where: commonOptions.where })
+      : (safePage - 1) * safePageSize + items.length;
 
     return createPaginatedResponse(
       items.map((item) => this.mapOutput(item)),
@@ -147,6 +185,91 @@ export class NewsService {
     }
 
     return data;
+  }
+
+  private parseBooleanFlag(value: unknown, defaultValue: boolean): boolean {
+    if (value === undefined || value === null || value === "") {
+      return defaultValue;
+    }
+
+    const normalized = String(value).trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+    return defaultValue;
+  }
+
+  private applyListFilters(
+    qb: SelectQueryBuilder<NewsEntity>,
+    query: Pick<NewsListQuery, "keyword" | "category" | "status">,
+  ): void {
+    if (query.category) {
+      qb.andWhere("news.category = :category", { category: query.category });
+    }
+
+    if (query.status === "published") {
+      qb.andWhere("news.isPublished = :isPublished", { isPublished: true });
+    } else if (query.status === "draft") {
+      qb.andWhere("news.isPublished = :isPublished", { isPublished: false });
+    }
+
+    if (query.keyword.trim().length > 0) {
+      qb.andWhere("(news.title LIKE :keyword OR news.excerpt LIKE :keyword)", {
+        keyword: `%${query.keyword}%`,
+      });
+    }
+  }
+
+  private async findAllCompact(query: NewsListQuery, withCount: boolean) {
+    const qb = this.newsRepository
+      .createQueryBuilder("news")
+      .select("news.id", "id")
+      .addSelect("news.title", "title")
+      .addSelect("news.excerpt", "excerpt")
+      .addSelect("news.date", "date")
+      .addSelect("news.icon", "icon")
+      .addSelect("news.category", "category")
+      .addSelect("news.author", "author")
+      .addSelect("news.coverImage", "coverImage")
+      .addSelect("news.isPublished", "isPublished")
+      .addSelect("news.createdAt", "createdAt")
+      .addSelect("news.updatedAt", "updatedAt");
+
+    this.applyListFilters(qb, query);
+
+    qb.orderBy(`news.${query.sortBy}`, query.sortOrder)
+      .skip((query.page - 1) * query.pageSize)
+      .take(query.pageSize);
+
+    const rows = await qb.getRawMany<Record<string, any>>();
+    const items = rows.map((row) => ({
+      id: Number(row.id),
+      title: row.title,
+      excerpt: row.excerpt || "",
+      date: row.date || "",
+      icon: row.icon || "",
+      category: row.category || "",
+      author: row.author || "",
+      coverImage: row.coverImage || "",
+      image: row.coverImage || "",
+      isPublished: Boolean(Number(row.isPublished)),
+      status: Boolean(Number(row.isPublished)) ? "published" : "draft",
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      views: 0,
+    }));
+
+    let total = (query.page - 1) * query.pageSize + items.length;
+    if (withCount) {
+      const countQb = this.newsRepository.createQueryBuilder("news");
+      this.applyListFilters(countQb, query);
+      total = await countQb.getCount();
+    }
+
+    return createPaginatedResponse(items, query.page, query.pageSize, total);
   }
 
   private mapOutput(item: NewsEntity): Record<string, any> {

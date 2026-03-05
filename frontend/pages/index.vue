@@ -268,7 +268,6 @@ const fetchCompany = async () => {
     const res = await apiGet<{ code: number; data: Company }>('/company')
     if (res.code === 200 || res.code === 0) {
       company.value = res.data
-      console.log('公司信息:', company.value)
     }
   } catch (e) {
     console.error('获取公司信息失败:', e)
@@ -279,13 +278,13 @@ const fetchCompany = async () => {
 const fetchProducts = async () => {
   try {
     loading.value = true
-    console.log('=== 开始获取商品列表 ===')
     const res = await apiGet<{ code: number; data: any }>('/products', {
       page: 1,
       pageSize: 4,
-      status: 'active'
+      status: 'active',
+      compact: 'true',
+      withCount: 'false'
     })
-    console.log('API 原始响应:', res)
     
     if (res.code === 200 || res.code === 0) {
       // 后端返回的分页格式: { code, message, data: [...items], pagination, timestamp }
@@ -298,7 +297,6 @@ const fetchProducts = async () => {
       } else {
         products.value = []
       }
-      console.log('商品数据:', products.value)
     }
   } catch (e) {
     console.error('获取商品失败:', e)
@@ -314,9 +312,7 @@ const handleGetQuote = (productName: string) => {
 
 // 页面加载时获取数据
 onMounted(async () => {
-  await fetchSeo()
-  await fetchCompany()
-  await fetchProducts()
+  await Promise.all([fetchSeo(), fetchCompany(), fetchProducts()])
 })
 
 // SEO 配置

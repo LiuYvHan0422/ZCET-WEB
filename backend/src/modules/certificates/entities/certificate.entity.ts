@@ -1,6 +1,8 @@
-import { Entity, Column } from "typeorm";
+import { Entity, Column, Index } from "typeorm";
 import { BaseEntity } from "../../../common/entities/base.entity";
 
+@Index("idx_certificates_active_type_sort", ["isActive", "type", "sortOrder"])
+@Index("idx_certificates_type_created", ["type", "createdAt"])
 @Entity("certificates")
 export class CertificateEntity extends BaseEntity {
   // 继承属性声明

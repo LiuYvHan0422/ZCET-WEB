@@ -1,9 +1,17 @@
-import { Controller, Get, Patch, Put, Body, UseGuards } from "@nestjs/common";
 import {
-  ApiTags,
+  Body,
+  Controller,
+  Get,
+  Header,
+  Patch,
+  Put,
+  UseGuards,
+} from "@nestjs/common";
+import {
+  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiTags,
 } from "@nestjs/swagger";
 import { CompanyService } from "./company.service";
 import { UpdateCompanyDto } from "./dto/company.dto";
@@ -15,6 +23,10 @@ export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
   @Get()
+  @Header(
+    "Cache-Control",
+    "public, max-age=120, s-maxage=600, stale-while-revalidate=1200",
+  )
   @ApiOperation({ summary: "获取公司信息" })
   @ApiResponse({ status: 200, description: "获取公司信息成功" })
   async findOne() {

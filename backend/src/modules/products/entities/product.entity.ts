@@ -1,6 +1,8 @@
-import { Entity, Column } from "typeorm";
+import { Entity, Column, Index } from "typeorm";
 import { BaseEntity } from "../../../common/entities/base.entity";
 
+@Index("idx_products_active_category_created", ["isActive", "category", "createdAt"])
+@Index("idx_products_active_featured_created", ["isActive", "isFeatured", "createdAt"])
 @Entity("products")
 export class ProductEntity extends BaseEntity {
   // 继承属性声明

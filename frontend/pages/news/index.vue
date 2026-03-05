@@ -133,13 +133,13 @@ const fetchNews = async () => {
     const res = await apiGet<{ code: number; data: News[] }>('/news', {
       page: 1,
       pageSize: 100,
-      status: 'published'
+      status: 'published',
+      compact: 'true',
+      withCount: 'false'
     })
-    console.log('新闻接口返回:', res)
     if (res.code === 200 || res.code === 0) {
       // 直接使用 res.data，因为后端返回的是数组不是 { items: [...] }
       newsList.value = res.data || []
-      console.log('新闻列表数据:', newsList.value)
     }
   } catch (e: any) {
     error.value = e.message || '获取新闻失败'
@@ -171,8 +171,7 @@ const changePage = (page: number) => {
 
 // 页面加载时获取数据
 onMounted(async () => {
-  await fetchSeo()
-  await fetchNews()
+  await Promise.all([fetchSeo(), fetchNews()])
 })
 
 // SEO 配置

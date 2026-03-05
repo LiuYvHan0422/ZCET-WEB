@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, FindOptionsWhere, ILike } from "typeorm";
+import { Repository, FindOptionsWhere, ILike, SelectQueryBuilder } from "typeorm";
 import { ProductEntity } from "./entities/product.entity";
 import {
   CreateProductDto,
@@ -20,6 +20,16 @@ const PRODUCT_SORT_FIELDS: Array<keyof ProductEntity> = [
   "price",
   "stock",
 ];
+
+type ProductListQuery = {
+  keyword: string;
+  category?: string;
+  status?: string;
+  sortBy: keyof ProductEntity;
+  sortOrder: "ASC" | "DESC";
+  page: number;
+  pageSize: number;
+};
 
 @Injectable()
 export class ProductsService {
@@ -51,7 +61,12 @@ export class ProductsService {
       sortOrder = "DESC",
       page = 1,
       pageSize = 10,
+      compact,
+      withCount,
     } = query;
+
+    const compactMode = this.parseBooleanFlag(compact, false);
+    const shouldCount = this.parseBooleanFlag(withCount, true);
 
     const where: FindOptionsWhere<ProductEntity> = {};
     if (category) {
@@ -73,11 +88,25 @@ export class ProductsService {
       String(sortOrder).toUpperCase() === "ASC" ? "ASC" : "DESC";
     const safePage = Math.max(1, Number(page) || 1);
     const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
+    const queryOptions: ProductListQuery = {
+      keyword,
+      category,
+      status,
+      sortBy: safeSortBy,
+      sortOrder: safeSortOrder,
+      page: safePage,
+      pageSize: safePageSize,
+    };
 
-    const [items, total] = await this.productRepository.findAndCount({
+    if (compactMode) {
+      return this.findAllCompact(queryOptions, shouldCount);
+    }
+
+    const commonOptions = {
       where: shouldSearch
         ? [
             { ...where, name: ILike(`%${keyword}%`) },
+            { ...where, shortDescription: ILike(`%${keyword}%`) },
             { ...where, description: ILike(`%${keyword}%`) },
           ]
         : where,
@@ -86,7 +115,12 @@ export class ProductsService {
       },
       skip: (safePage - 1) * safePageSize,
       take: safePageSize,
-    });
+    } as const;
+
+    const items = await this.productRepository.find(commonOptions);
+    const total = shouldCount
+      ? await this.productRepository.count({ where: commonOptions.where })
+      : (safePage - 1) * safePageSize + items.length;
 
     return createPaginatedResponse(items, safePage, safePageSize, total);
   }
@@ -130,5 +164,111 @@ export class ProductsService {
       order: { createdAt: "DESC" },
       take: safeLimit,
     });
+  }
+
+  private parseBooleanFlag(value: unknown, defaultValue: boolean): boolean {
+    if (value === undefined || value === null || value === "") {
+      return defaultValue;
+    }
+
+    const normalized = String(value).trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+    return defaultValue;
+  }
+
+  private normalizeSummary(text: unknown, maxLength = 140): string {
+    const plainText = String(text || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!plainText) return "";
+    if (plainText.length <= maxLength) return plainText;
+    return `${plainText.slice(0, maxLength)}...`;
+  }
+
+  private applyListFilters(
+    qb: SelectQueryBuilder<ProductEntity>,
+    query: Pick<ProductListQuery, "keyword" | "category" | "status">,
+  ): void {
+    if (query.category) {
+      qb.andWhere("product.category = :category", { category: query.category });
+    }
+
+    if (query.status === "active") {
+      qb.andWhere("product.isActive = :isActive", { isActive: true });
+    } else if (query.status === "inactive") {
+      qb.andWhere("product.isActive = :isActive", { isActive: false });
+    }
+
+    if (query.keyword.trim().length > 0) {
+      qb.andWhere(
+        "(product.name LIKE :keyword OR product.shortDescription LIKE :keyword OR product.description LIKE :keyword)",
+        { keyword: `%${query.keyword}%` },
+      );
+    }
+  }
+
+  private async findAllCompact(query: ProductListQuery, withCount: boolean) {
+    const qb = this.productRepository
+      .createQueryBuilder("product")
+      .select("product.id", "id")
+      .addSelect("product.name", "name")
+      .addSelect("product.sku", "sku")
+      .addSelect("product.shortDescription", "shortDescription")
+      .addSelect("SUBSTRING(product.description, 1, 240)", "description")
+      .addSelect("product.price", "price")
+      .addSelect("product.stock", "stock")
+      .addSelect("product.category", "category")
+      .addSelect("product.image", "image")
+      .addSelect("product.icon", "icon")
+      .addSelect("product.isActive", "isActive")
+      .addSelect("product.isFeatured", "isFeatured")
+      .addSelect("product.createdAt", "createdAt")
+      .addSelect("product.updatedAt", "updatedAt");
+
+    this.applyListFilters(qb, query);
+
+    qb.orderBy(`product.${query.sortBy}`, query.sortOrder)
+      .skip((query.page - 1) * query.pageSize)
+      .take(query.pageSize);
+
+    const rows = await qb.getRawMany<Record<string, any>>();
+    const items = rows.map((row) => {
+      const shortDescription =
+        this.normalizeSummary(row.shortDescription) ||
+        this.normalizeSummary(row.description);
+
+      return {
+        id: Number(row.id),
+        name: row.name,
+        sku: row.sku,
+        shortDescription,
+        description: this.normalizeSummary(row.description, 240),
+        price: typeof row.price === "string" ? Number(row.price) : row.price,
+        stock: Number(row.stock || 0),
+        category: row.category,
+        image: row.image,
+        icon: row.icon,
+        isActive: Boolean(Number(row.isActive)),
+        isFeatured: Boolean(Number(row.isFeatured)),
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      };
+    });
+
+    let total = (query.page - 1) * query.pageSize + items.length;
+    if (withCount) {
+      const countQb = this.productRepository.createQueryBuilder("product");
+      this.applyListFilters(countQb, query);
+      total = await countQb.getCount();
+    }
+
+    return createPaginatedResponse(items, query.page, query.pageSize, total);
   }
 }

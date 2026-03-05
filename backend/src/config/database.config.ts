@@ -8,6 +8,17 @@ const toBoolean = (
   return value === "true";
 };
 
+const toInt = (
+  value: string | undefined,
+  defaultValue: number,
+): number => {
+  if (value === undefined || value === "") {
+    return defaultValue;
+  }
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : defaultValue;
+};
+
 export const databaseConfig = () => ({
   database: {
     host: process.env.DB_HOST || process.env.MYSQL_HOST || "127.0.0.1",
@@ -21,5 +32,10 @@ export const databaseConfig = () => ({
       process.env.DB_LOGGING,
       process.env.NODE_ENV === "development",
     ),
+    connectionLimit: toInt(process.env.DB_CONNECTION_LIMIT, 10),
+    queueLimit: toInt(process.env.DB_QUEUE_LIMIT, 0),
+    keepAlive: toBoolean(process.env.DB_KEEPALIVE, true),
+    keepAliveInitialDelay: toInt(process.env.DB_KEEPALIVE_INITIAL_DELAY, 10000),
+    connectTimeout: toInt(process.env.DB_CONNECT_TIMEOUT, 10000),
   },
 });

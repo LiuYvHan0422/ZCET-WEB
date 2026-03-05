@@ -278,8 +278,7 @@ const fetchCompany = async () => {
 
 // 页面加载时获取数据
 onMounted(async () => {
-  await fetchSeo()
-  await fetchCompany()
+  await Promise.all([fetchSeo(), fetchCompany()])
 })
 
 // SEO 配置

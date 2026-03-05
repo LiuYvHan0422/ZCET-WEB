@@ -8,6 +8,8 @@ import {
   Delete,
   Query,
   UseGuards,
+  Req,
+  Res,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -18,6 +20,7 @@ import {
 import { NewsService } from "./news.service";
 import { CreateNewsDto, UpdateNewsDto, NewsQueryDto } from "./dto/news.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import type { Request, Response } from "express";
 
 @ApiTags("新闻管理")
 @Controller("news")
@@ -37,7 +40,12 @@ export class NewsController {
   @Get()
   @ApiOperation({ summary: "获取新闻列表" })
   @ApiResponse({ status: 200, description: "获取新闻列表成功" })
-  findAll(@Query() query: NewsQueryDto) {
+  findAll(
+    @Query() query: NewsQueryDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    this.applyPublicCache(req, res, query.status);
     return this.newsService.findAll(query);
   }
 
@@ -77,5 +85,20 @@ export class NewsController {
   async remove(@Param("id") id: string) {
     await this.newsService.remove(+id);
     return { code: 200, message: "新闻删除成功" };
+  }
+
+  private applyPublicCache(
+    req: Request,
+    res: Response,
+    status?: string,
+  ): void {
+    const hasAuth = Boolean(req.headers.authorization);
+    if (hasAuth) return;
+    if (status !== "published") return;
+
+    res.setHeader(
+      "Cache-Control",
+      "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+    );
   }
 }

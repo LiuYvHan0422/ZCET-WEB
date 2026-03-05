@@ -8,6 +8,9 @@ import {
   Delete,
   Query,
   UseGuards,
+  Req,
+  Res,
+  Header,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -23,6 +26,7 @@ import {
 } from "./dto/product.dto";
 import { ProductEntity } from "./entities/product.entity";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import type { Request, Response } from "express";
 
 @ApiTags("产品管理")
 @Controller("products")
@@ -46,11 +50,20 @@ export class ProductsController {
   @Get()
   @ApiOperation({ summary: "获取产品列表" })
   @ApiResponse({ status: 200, description: "获取产品列表成功" })
-  findAll(@Query() query: ProductQueryDto) {
+  findAll(
+    @Query() query: ProductQueryDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    this.applyPublicCache(req, res, query.status);
     return this.productsService.findAll(query);
   }
 
   @Get("categories")
+  @Header(
+    "Cache-Control",
+    "public, max-age=120, s-maxage=600, stale-while-revalidate=1200",
+  )
   @ApiOperation({ summary: "获取所有产品分类" })
   @ApiResponse({ status: 200, description: "获取分类成功" })
   getCategories(): Promise<string[]> {
@@ -106,5 +119,20 @@ export class ProductsController {
       code: 200,
       message: "产品删除成功",
     };
+  }
+
+  private applyPublicCache(
+    req: Request,
+    res: Response,
+    status?: string,
+  ): void {
+    const hasAuth = Boolean(req.headers.authorization);
+    if (hasAuth) return;
+    if (status !== "active") return;
+
+    res.setHeader(
+      "Cache-Control",
+      "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+    );
   }
 }

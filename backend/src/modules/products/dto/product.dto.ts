@@ -173,4 +173,22 @@ export class ProductQueryDto {
   @IsInt({ message: "每页数量必须是整数" })
   @Min(1, { message: "每页数量必须大于等于 1" })
   pageSize?: number = 10;
+
+  @ApiProperty({
+    description: "Return compact list fields only (true/false)",
+    required: false,
+    example: "true",
+  })
+  @IsOptional()
+  @IsString()
+  compact?: string;
+
+  @ApiProperty({
+    description: "Whether to calculate total count (true/false)",
+    required: false,
+    example: "true",
+  })
+  @IsOptional()
+  @IsString()
+  withCount?: string;
 }
